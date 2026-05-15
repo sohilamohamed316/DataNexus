@@ -39,6 +39,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from dotenv import load_dotenv
 load_dotenv(PROJECT_ROOT / ".env")
 
+from sqlalchemy import text
 from src.database import get_db_session
 from src.database.models import (
     DataSource,
@@ -169,7 +170,7 @@ def _create_sample_csv(path: Path) -> None:
 
 
 def _reset_seed_data(session) -> None:
-    """Delete all rows created by a previous seed run, in FK-safe order."""
+    """Delete all rows created by a previous seed run and reset all ID sequences to 1."""
     configs = session.query(ValidationConfig).filter(
         ValidationConfig.name.in_(["Basic Customer Checks", "Strict Customer Checks"])
     ).all()
@@ -185,7 +186,21 @@ def _reset_seed_data(session) -> None:
         session.delete(s)
 
     session.flush()
-    print("  [RESET]  Existing seed data removed.")
+
+    sequences = [
+        "data_sources_id_seq",
+        "datasets_id_seq",
+        "validation_configs_id_seq",
+        "validation_runs_id_seq",
+        "validation_results_id_seq",
+        "data_profiles_id_seq",
+        "alerts_id_seq",
+        "test_definitions_id_seq",
+    ]
+    for seq in sequences:
+        session.execute(text(f"ALTER SEQUENCE {seq} RESTART WITH 1"))
+
+    print("  [RESET]  Existing seed data removed and ID sequences restarted.")
 
 
 def _seed(csv_path: Path) -> dict:

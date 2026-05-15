@@ -1,0 +1,57 @@
+# DataNexus Validation Config — Template
+# ---------------------------------------
+# Replace placeholders below and load this config into the database
+# (direct DB insert or via the future REST API endpoint).
+
+dataset: your_table_name           # must match datasets.table_name
+name: My Validation Config
+description: Describe what this config validates.
+quality_threshold: 80.0            # run FAILS if score drops below this (0–100)
+alert_channels: []                 # options: [slack, email] — Step 7
+
+checks:
+  # ── Completeness: column must not be empty ─────────────────────────────────
+  - name: email_not_empty
+    column: email
+    check_type: not_empty
+    threshold: 0.95     # 95% of rows must pass this check
+    severity: high      # options: low | medium | high | critical
+
+  # ── Range: numeric values must fall inside [min, max] ─────────────────────
+  - name: age_in_range
+    column: age
+    check_type: range
+    min_value: 18
+    max_value: 120
+    threshold: 1.0
+    severity: medium
+
+  # ── Uniqueness: no duplicate values allowed ────────────────────────────────
+  - name: id_unique
+    column: customer_id
+    check_type: unique
+    threshold: 1.0
+    severity: critical
+
+  # ── Value set: column must contain only accepted values ────────────────────
+  - name: status_valid
+    column: status
+    check_type: in_set
+    accepted_values: [active, inactive, pending]
+    threshold: 1.0
+    severity: high
+
+  # ── Regex: column values must match a pattern ──────────────────────────────
+  # - name: phone_format
+  #   column: phone
+  #   check_type: regex
+  #   pattern: '^\+?[0-9]{7,15}$'
+  #   threshold: 0.90
+  #   severity: low
+
+# Supported check_type values:
+#   not_null | completeness | not_empty | unique | range
+#   regex | in_set | foreign_key | referential_integrity | freshness
+#
+# Severity weight in quality score:
+#   critical=1.0  high=0.75  medium=0.5  low=0.25
