@@ -8,7 +8,7 @@ over time. It's built as a set of small, isolated modules (profiler, config pars
 validation engine, GE adapter) sitting on top of a PostgreSQL metadata store —
 designed so each piece can be developed, tested, and reasoned about independently.
 
-> 📍 **Status:** core engine + CLI are functional end-to-end against a real database.
+> 📍 **Status:** core engine, CLI, and dashboard are functional end-to-end against a real database.
 > See [Project Status](#project-status) below for exactly what's built vs. planned.
 
 ---
@@ -24,8 +24,8 @@ designed so each piece can be developed, tested, and reasoned about independentl
 4. **Persist** every run, every per-check result, and the dataset profile, so history
    is queryable later
 
-All of this is reachable today through a CLI tool — no servers, no extra setup beyond
-a Postgres database.
+All of this is reachable today through the CLI or the Streamlit dashboard — both run
+directly against Postgres, no extra infrastructure required.
 
 ---
 
@@ -57,6 +57,9 @@ datanexus config list
 datanexus run <config-id>
 datanexus runs list
 datanexus runs show <run-id>
+
+# 8. Or browse it visually
+streamlit run src/dashboard/app.py
 ```
 
 ### CLI command reference
@@ -73,6 +76,21 @@ datanexus runs show <run-id>
 
 Every command above is real — none of it is mocked or hardcoded.
 
+### Dashboard
+
+Launch with `streamlit run src/dashboard/app.py`. Six pages across two sections:
+
+| Section | Page | What it shows |
+|---|---|---|
+| Monitor | Overview | Fleet-wide KPIs, a live "run validation now" control, recent runs feed |
+| Monitor | Trends | Quality score over time, filterable by dataset |
+| Monitor | Run Details | Per-run status, quality gauge, severity breakdown, full check results |
+| Monitor | Data Profile | Profiler output — row/column counts, null %, distinct count, min/max/mean, pattern badges |
+| Operate | Alerts | Active alert inbox |
+| Operate | Config Explorer | Every validation config — parsed checks, raw YAML, active/inactive toggle |
+
+Every page queries Postgres directly — none of it is mocked either.
+
 ---
 
 ## Architecture
@@ -82,7 +100,7 @@ flowchart TD
     subgraph UI["User Interaction"]
         CLI["CLI (Click) ✅"]
         API["REST API — planned"]
-        DASH["Dashboard — planned"]
+        DASH["Dashboard (Streamlit) ✅"]
     end
 
     subgraph CORE["Core Engine ✅"]
@@ -159,6 +177,8 @@ than an idealized roadmap.
   [`src/ge_adapter/README.md`](src/ge_adapter/README.md))
 - CLI tool (Click) — seed, run, profile, config, runs, sources, datasets
 - Demo seed script with deliberately corrupted sample data
+- Streamlit Dashboard (multi-page, Plotly charts) — overview KPIs, quality trends,
+  per-run drill-down, dataset profiles, alert inbox, and config explorer
 
 ### 🔜 Designed, not yet implemented
 
@@ -166,7 +186,6 @@ than an idealized roadmap.
   `alerts`, logic not written)
 - **REST API** (Flask) — not required by the CLI, which talks to the database
   directly; would matter for Airflow/CI integration later
-- **Streamlit Dashboard** — quality score visualization, trend charts
 - **Airflow DAG** — scheduled validation runs
 - **Test suite** (pytest) — no automated tests yet
 - **Docker Compose** — no containerization yet
@@ -180,8 +199,8 @@ architecture; this README reflects what's actually implemented today.
 ## Tech stack
 
 Python 3 · PostgreSQL · SQLAlchemy + Alembic · pandas · PyYAML/Pydantic ·
-Great Expectations · Click + Rich (CLI) · *(planned: Flask, Streamlit, Apache Airflow,
-pytest, Docker, GitHub Actions)*
+Great Expectations · Click + Rich (CLI) · Streamlit + Plotly (dashboard) ·
+*(planned: Flask, Apache Airflow, pytest, Docker, GitHub Actions)*
 
 ---
 
@@ -198,7 +217,7 @@ datanexus/
 │   ├── cli/              # Click-based CLI (entry point)
 │   ├── alert_manager/    # placeholder — Slack/email alerts
 │   ├── api/               # placeholder — Flask REST API
-│   └── dashboard/         # placeholder — Streamlit dashboard
+│   └── dashboard/         # Streamlit dashboard — views/, components/, db.py
 ├── migrations/            # Alembic migration scripts
 ├── config/examples/      # Sample validation YAML configs
 ├── scripts/seed.py        # Demo data seeder
